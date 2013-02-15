@@ -90,6 +90,9 @@ public class ComputingNode {
 					JSONObject row = resources.getJSONObject(i); 
 					try {
 						JSONArray instancesArray = row.getJSONArray("instances");
+						String uuid = row.getString("id");
+						System.out.println("So thu tu cua mang instances:" + i);
+						System.out.println("UUID :" + uuid);
 						for(int j=0; j<instancesArray.length(); j++){
 							if(instancesArray.getJSONObject(j).getString("status").equals("started")){
 								nbRunningInstances+=1;
@@ -140,7 +143,7 @@ public class ComputingNode {
 	public static void main(String[] args) {
 		ComputingNode cpNode = new ComputingNode("7lm3x4j");
 		//cpNode.setStatus();
-		System.out.println(cpNode.toString());
+		//System.out.println(cpNode.toString());
 	}
 	
 }
