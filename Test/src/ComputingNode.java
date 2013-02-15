@@ -14,32 +14,24 @@ import org.json.JSONObject;
 
 public class ComputingNode {
 	private String hostName;
-	private String idNode, idFilter, idTraductor;
+	//private  map<uuid, int> nbRunningInstancesPerId;
+	
+	private int nbTotalRunningInstances;
 	private int nbCoeurs;
-	private int nbFiltersCourant; // Nombre des instances du filter
-	private int nbTraductorsCourant; // Nombre des instances du traductor
+
 	public ComputingNode(){
 		hostName = "";
-		idNode = "";
-		idFilter = "";
-		idTraductor = "";
+		nbTotalRunningInstances = 0;
 		nbCoeurs = 0;
-		nbFiltersCourant = 0;
-		nbTraductorsCourant = 0;
+
 	}
 	
 	public ComputingNode(String hostName){
 		setHostName(hostName);
+		setStatus();
 	}
 	
-	public ComputingNode(String hostName, int nbCoeurs, int nbFilters, int nbTraductors, String idFilter, String idTraductor){
-		setHostName(hostName);
-		setFiltersCourant(nbFilters);
-		setNbcoeurs(nbCoeurs);
-		setNbTraductorsCourant(nbTraductors);		
-		setIdFilter(idFilter);
-		setIdTraductor(idTraductor);
-	}
+
 	
 	public String getHostName(){
 		return hostName;
@@ -49,30 +41,6 @@ public class ComputingNode {
 		this.hostName = hostName;
 	}
 	
-	public String getIdNode(){
-		return idNode;
-	}
-	
-	public void setIdNode(String id){
-		this.idNode = id;
-	}
-	
-	public String getIdFilter(){
-		return idFilter;
-	}
-	
-	public void setIdFilter(String id){
-		this.idFilter = id;
-	}
-	
-	public String getIdTraductor(){
-		return idTraductor;
-	}
-	
-	public void setIdTraductor(String id){
-		this.idTraductor = id;
-	}
-	
 	public int getNbcoeurs(){
 		return nbCoeurs;
 	}
@@ -80,30 +48,22 @@ public class ComputingNode {
 	public void setNbcoeurs(int nbCoeurs){
 		this.nbCoeurs = nbCoeurs;
 	}
-	
-	public int getNbFiltersCourant(){
-		return nbFiltersCourant;
+
+	public int getNbRunningInstances(){
+		return nbCoeurs;
 	}
 	
-	public void setFiltersCourant(int nbFiltersCourant){
-		this.nbFiltersCourant = nbFiltersCourant;
-	}
-	
-	public int getNbTraductorsCourant(){
-		return nbTraductorsCourant;
-	}
-	
-	public void setNbTraductorsCourant(int nbTraductorsCourant){
-		this.nbTraductorsCourant = nbTraductorsCourant;
+	public void setNbRunningInstances(int nbRunningInstances){
+		this.nbTotalRunningInstances = nbRunningInstances;
 	}
 	
 	// Mettre a jour le status du computing noeud
 	public void setStatus(){
-		int nbFilters=0, nbTraductors=0, nbCoeurs=0;
-		String idUniqueFilter = "", idUniqueTraductor = "";
+		int nbCoeurs = 0, nbRunningInstances = 0;
+		
 		HttpClient client = new HttpClient();
 	
-		GetMethod method = new GetMethod("http://"+this.hostName+":8888/status");
+		GetMethod method = new GetMethod("http://"+hostName+":8888/status");
 		method.getParams().setParameter(HttpMethodParams.RETRY_HANDLER,
 				new DefaultHttpMethodRetryHandler(3, false));
 		
@@ -122,22 +82,27 @@ public class ComputingNode {
 				JSONObject system = rootObject.getJSONObject("system");
 				// JSONObject hardwareConcurrency = system.getJSONObject("hardwareConcurrency");
 				nbCoeurs = system.getInt("hardwareConcurrency");
-
+				System.out.println("Nombre de coeurs de la machine: " + nbCoeurs);
+				
 				JSONArray resources = rootObject.getJSONArray("resources");
-				// Get element which contains the instances of filters
-				JSONObject element1 = resources.getJSONObject(1);
-				JSONArray filterInstances = element1.getJSONArray("instances");
-				idUniqueFilter = element1.getString("id");
-				// JSONArray filterInstances = resources.getJSONObject(1).getJSONArray("instances");
-				nbFilters = filterInstances.length();
-
-				// Get element which contains the instances of translators
-				JSONObject element3 = resources.getJSONObject(3);
-				JSONArray traductorInstances = element3.getJSONArray("instances");
-				idUniqueTraductor = element3.getString("id");
-				// JSONArray traductorInstances = resources.getJSONObject(3).getJSONArray("instances");
-				nbTraductors = traductorInstances.length();
-
+				
+				for(int i=0; i<resources.length(); i++){
+					JSONObject row = resources.getJSONObject(i); 
+					try {
+						JSONArray instancesArray = row.getJSONArray("instances");
+						for(int j=0; j<instancesArray.length(); j++){
+							if(instancesArray.getJSONObject(j).getString("status").equals("started")){
+								nbRunningInstances+=1;
+							}
+						}
+						System.out.println("Nombre des instances: " + instancesArray.length());
+						System.out.println("Nombre des instances running: " + nbRunningInstances);
+					} catch (JSONException e) {
+						//e.printStackTrace();
+					}
+					
+				}
+				
 			} catch (JSONException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -156,14 +121,12 @@ public class ComputingNode {
 		}
 		
 		this.setNbcoeurs(nbCoeurs);
-		this.setFiltersCourant(nbFilters);
-		this.setIdFilter(idUniqueFilter);
-		this.setNbTraductorsCourant(nbTraductors);
-		this.setIdTraductor(idUniqueTraductor);
+		this.setNbRunningInstances(nbRunningInstances);
 	}
 	
 	public String toString(){
-		return "Cette noeud a hostName: "+ this.hostName +"\nNombre de coeurs: "+ this.nbCoeurs+"\nidUnique de filter: "+ this.idFilter + "\nNombre des instances du filter:" + this.nbFiltersCourant + "\nidUnique de traductor: "+ this.idTraductor +"\nNombre des instances du traductor: "+ this.nbTraductorsCourant;
+		//return "Cette noeud a hostName: "+ this.hostName +"\nNombre de coeurs: "+ this.nbCoeurs+"\nidUnique de filter: "+ this.idFilter + "\nNombre des instances du filter:" + this.nbFiltersCourant + "\nidUnique de traductor: "+ this.idTraductor +"\nNombre des instances du traductor: "+ this.nbTraductorsCourant;
+		return "Cette noeud a hostName: "+ this.hostName +"\nNombre de coeurs: "+ this.nbCoeurs+"\nNombre des instances actives:" + this.nbTotalRunningInstances;
 	}
 	
 	public void startNewInstancesFilter(int nb){
@@ -176,7 +139,7 @@ public class ComputingNode {
 	
 	public static void main(String[] args) {
 		ComputingNode cpNode = new ComputingNode("7lm3x4j");
-		cpNode.setStatus();
+		//cpNode.setStatus();
 		System.out.println(cpNode.toString());
 	}
 	
