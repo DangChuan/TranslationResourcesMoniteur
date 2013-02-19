@@ -29,6 +29,29 @@ public class ManagerComputingNode {
 		return false;
 	}
 	
+	public ArrayList<String> getHostNameList(){
+		return this.hostNameList;
+	}
+	
+	public void setHostNameList(ArrayList<String> hostNameList){
+		this.hostNameList = hostNameList;
+	}
+	
+	public String getHostNameDisponible(){
+		//ManagerComputingNode man = new ManagerComputingNode();
+		Iterator<String> itr = hostNameList.iterator();
+		while (itr.hasNext()) {
+			String hostElement = itr.next();
+			ComputingNode cpNode = new ComputingNode(hostElement);
+			if(cpNode.getNbCoeursDisponibles()>0 && cpNode.getNbCoeursDisponibles()<cpNode.getNbcoeurs()){
+				return hostElement;
+			}
+			//cpNode.setStatus();
+			System.out.println(cpNode.toString());
+		}
+		return "";
+	}
+	
 	public static void main(String[] args) {
 		ManagerComputingNode man = new ManagerComputingNode();
 		Iterator<String> itr = man.hostNameList.iterator();

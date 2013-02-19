@@ -1,6 +1,11 @@
 package trm;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
 
 import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
 import org.apache.commons.httpclient.HttpClient;
@@ -15,9 +20,10 @@ import org.json.JSONObject;
 public class ComputingNode {
 	private String hostName;
 	//private  map<uuid, int> nbRunningInstancesPerId;
-	
+	private Map<String,Integer> nbRunningInstancesPerIdMap = new HashMap<String,Integer>();
 	private int nbTotalRunningInstances;
 	private int nbCoeurs;
+	//private int nbCoeursDisponibles;// NbCoeursDisponibles = nbCoeurs - nbTotalRunningInstances
 
 	public ComputingNode(){
 		hostName = "";
@@ -50,11 +56,15 @@ public class ComputingNode {
 	}
 
 	public int getNbRunningInstances(){
-		return nbCoeurs;
+		return nbTotalRunningInstances;
 	}
 	
 	public void setNbRunningInstances(int nbRunningInstances){
 		this.nbTotalRunningInstances = nbRunningInstances;
+	}
+	
+	public int getNbCoeursDisponibles(){
+		return nbCoeurs - nbTotalRunningInstances;
 	}
 	
 	// Mettre a jour le status du computing noeud
@@ -91,13 +101,17 @@ public class ComputingNode {
 					try {
 						JSONArray instancesArray = row.getJSONArray("instances");
 						String uuid = row.getString("id");
+						int nbRunningInstancePerUuid = 0;
 						System.out.println("So thu tu cua mang instances:" + i);
 						System.out.println("UUID :" + uuid);
 						for(int j=0; j<instancesArray.length(); j++){
 							if(instancesArray.getJSONObject(j).getString("status").equals("started")){
 								nbRunningInstances+=1;
+								nbRunningInstancePerUuid+=1;
 							}
 						}
+						nbRunningInstancesPerIdMap.put(uuid, nbRunningInstancePerUuid);
+						System.out.println(uuid + " Nombre des nbRunningInstancePerUuid: " + nbRunningInstancePerUuid);
 						System.out.println("Nombre des instances: " + instancesArray.length());
 						System.out.println("Nombre des instances running: " + nbRunningInstances);
 					} catch (JSONException e) {
@@ -140,8 +154,35 @@ public class ComputingNode {
 		
 	}
 	
+	public void affichierInfoMap(){
+		Set s=this.nbRunningInstancesPerIdMap.entrySet();
+		Iterator it= s.iterator();
+		while(it.hasNext())
+        {
+            // key=value separator this by Map.Entry to get key and value
+            Map.Entry m =(Map.Entry)it.next();
+
+            // getKey is used to get key of Map
+            String key=(String) m.getKey();
+
+            // getValue is used to get value of key in Map
+            int value=(Integer)m.getValue();
+
+            System.out.println("UUID :"+key+"  nombre d'instances :"+value);
+        }
+
+	}
+	
+	public int getNbInstancesParUuid(String uuid){
+		int nbInstances = nbRunningInstancesPerIdMap.get(uuid) != null ? nbRunningInstancesPerIdMap.get(uuid) : 0;
+		return nbInstances;
+	}
+	
 	public static void main(String[] args) {
 		ComputingNode cpNode = new ComputingNode("7lm3x4j");
+		cpNode.affichierInfoMap();
+		String uuid = "7477016b-104b-4e24-a289-13f48865aa23";
+		System.out.println(cpNode.getNbInstancesParUuid(uuid));
 		//cpNode.setStatus();
 		//System.out.println(cpNode.toString());
 	}
